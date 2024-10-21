@@ -11,23 +11,10 @@ private:
     string name;
     int position;
     int money;
-    vector<Place> board = {
-        Place("START", 0),
-        Place("A1", 50),
-        Place("A2", 80),
-        Place("A3", 100),
-        Place("WORKHOUSE", 0),
-        Place("UTILITY 1", 50),
-        Place("TRAIN 1", 50),
-        Place("JAIL", 0),
-        Place("SHELTER", 0),
-        Place("CHANCE", 0),
-        Place("TAXES", 0)
-    };
-
+    int blocked;
 
 public:
-    Player(string playerName, int initialMoney, ) : name(playerName), position(0), money(initialMoney) {}
+    Player(string playerName, int initialMoney, int isBlocked) : name(playerName), position(0), money(initialMoney), blocked(isBlocked) {}
 
     void move(int newPosition) {
         position += newPosition;
@@ -37,6 +24,7 @@ public:
         properties.push_back(property);
         cout << name << " acquired property: " << property.name << " worth $" << property.value << endl;
     }
+
 
     void changeMoney(int amount) {
         money += amount;
@@ -54,6 +42,11 @@ public:
         return name;
     }
 
+    int isBlocked() const{
+        return blocked;
+    }
+
+
     int getMoney() const {
         return money;
     }
@@ -61,6 +54,10 @@ public:
     int getPosition() const {
         return position;
     }
+
+    void makeBlockd(int turn) {
+        blocked += turn;
+    };
 };
 
 
@@ -68,12 +65,14 @@ class Place {
 private:
     string name;
     int value;
-    int position;  // Dodano pole pozycji
+    int rent;
+    int position;
+    int blocked;// Dodano pole pozycji
     Player* owner;
 
 public:
-    Place(string placeName, int placeValue, int placePosition)
-        : name(placeName), value(placeValue), position(placePosition), owner(nullptr) {}
+    Place(string placeName, int placeValue, int placeRent, int placePosition)
+        : name(placeName), value(placeValue), rent(placeRent), position(placePosition), owner(nullptr) {}
 
     void setOwner(Player* newOwner) {
         owner = newOwner;
@@ -82,6 +81,9 @@ public:
         }
     }
 
+    bool isOwned() const {
+        return owner != nullptr;
+    }
 
 
     string getOwnerName() const {
@@ -90,6 +92,10 @@ public:
 
     string getName() const {
         return name;
+    }
+
+    int getRent() const {
+        return rent;
     }
 
     int getValue() const {
@@ -105,23 +111,22 @@ public:
 
 int main() {
     vector<Place> board = {
-        Place("START", 0, 0),
-        Place("A1", 50, 1),
-        Place("A2", 80, 2),
-        Place("A3", 100, 3),
-        Place("WORKHOUSE", 0, 4),
-        Place("UTILITY 1", 50, 5),
-        Place("TRAIN 1", 50, 6),
-        Place("JAIL", 0, 7),
-        Place("SHELTER", 0, 8),
-        Place("CHANCE", 0, 9),
-        Place("TAXES", 0, 10)
+        Place("START", 0, 0, 0),
+        Place("A1", 50, 10, 1),
+        Place("A2", 80, 10, 2),
+        Place("A3", 100,10,  3),
+        Place("WORKHOUSE", 0,0, 4),
+        Place("UTILITY 1", 50, 10, 5),
+        Place("TRAIN 1", 50, 10, 6),
+        Place("JAIL", 0, 0,  7),
+        Place("SHELTER", 0, 0, 8),
+        Place("CHANCE", 0, 0,  9),
+        Place("TAXES", 0, 0, 10)
     };
 
 
 
     int n;
-    cout << "Enter the number of players: ";
     cin >> n;
     const int BoardSize = 10;
     vector<Player> players;
@@ -129,7 +134,7 @@ int main() {
     for (int i = 0; i < n; ++i) {
         string playerName = "player" + to_string(i + 1);
         int initialMoney = 200;
-        players.emplace_back(playerName, initialMoney);
+        players.emplace_back(playerName, initialMoney, 0);
     }
 
 
@@ -137,35 +142,35 @@ int main() {
     int turn=0;
     string s;
     while(cin>>s) {
-        turn+=1;
-        if(s=="Move") {
-            int arugment, player_id;
-            cin>>arugment;
-            player_id = turn%n;
+        turn++;
+        int player_id=turn%n;
+        Player user = players[player_id--];
 
-            user = players[player_id--];
-            user.move(arugment);
+        if(user.isBlocked()==0) {
+            if(s=="Move") {
+                int arugment;
+                cin>>arugment;
 
-            Place& currentPlace = board[user.getPosition()];
+                user.move(arugment);
 
-            if (currentPlace.isOwned()) {
-                if (user.getName() == currentPlace.getName()) {
-                    user.changeMoney()
+                Place& currentPlace = board[user.getPosition()];
+
+                if (currentPlace.isOwned()) {
+                    if (user.getName() != currentPlace.getName()) {
+                        user.changeMoney(-currentPlace.getRent());
+                    }
+                }else {
+                    if(currentPlace.getName()=="JAIL") {
+                        user.makeBlockd(2);
+                    }
                 }
+
+
+
             }
+        }else {
+            user.makeBlockd(-1);
         }
-
-
-
-
-
-
-
-
-
-    for (const auto& player : players) {
-        player.showStatus();
-        cout << "------------------------" << endl;
     }
 
 }
